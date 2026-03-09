@@ -6,17 +6,7 @@
 
 <h1>A股成交额前100名</h1>
 
-<div class="row mb-3 align-items-end">
-    <div class="col-md-3">
-        <label class="form-label">选择交易日：</label>
-        <input type="date" class="form-control" @bind="selectedDate" @bind:event="onchange" />
-    </div>
-    <div class="col-md-2">
-        <button class="btn btn-primary" @onclick="LoadData">查询</button>
-    </div>
-</div>
-
-<p>实时统计当前成交额前100的个股 (单位：亿元)。点击列名可进行排序。</p>
+<p>实时统计当前成交额前100的个股 (单位：亿元)。接口仅支持实时数据及最近一交易日统计。点击列名可进行排序。</p>
 
 @if (loading)
 {
@@ -63,7 +53,6 @@ else
     private List<StockInfo>? stocks;
     private string currentSortColumn = "Turnover";
     private bool isAscending = false;
-    private DateTime selectedDate = DateTime.Today;
     private bool loading = false;
 
     protected override async Task OnInitializedAsync()
@@ -74,7 +63,7 @@ else
     private async Task LoadData()
     {
         loading = true;
-        stocks = await StockService.GetTop100ByTurnoverAsync(selectedDate);
+        stocks = await StockService.GetTop100ByTurnoverAsync();
         SortStocks();
         loading = false;
     }

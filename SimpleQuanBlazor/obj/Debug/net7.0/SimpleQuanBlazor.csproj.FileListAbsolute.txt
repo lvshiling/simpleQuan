@@ -31,3 +31,4 @@ G:\babetree\simpleQuan\SimpleQuanBlazor\obj\Debug\net7.0\refint\SimpleQuanBlazor
 G:\babetree\simpleQuan\SimpleQuanBlazor\obj\Debug\net7.0\SimpleQuanBlazor.pdb
 G:\babetree\simpleQuan\SimpleQuanBlazor\obj\Debug\net7.0\SimpleQuanBlazor.genruntimeconfig.cache
 G:\babetree\simpleQuan\SimpleQuanBlazor\obj\Debug\net7.0\ref\SimpleQuanBlazor.dll
+G:\babetree\simpleQuan\SimpleQuanBlazor\obj\Debug\net7.0\SimpleQuanBlazor.sourcelink.json
