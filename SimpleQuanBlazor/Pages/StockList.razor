@@ -52,7 +52,11 @@ else
             {
                 <tr>
                     <td>@stock.Code</td>
-                    <td>@stock.Name</td>
+                    <td>
+                        <a href="https://quote.eastmoney.com/@(GetMarketPrefix(stock.Code)).html" target="_blank" class="text-decoration-none">
+                            @stock.Name
+                        </a>
+                    </td>
                     <td>@stock.Price.ToString("F2")</td>
                     <td style="color: @(stock.ChangePercent >= 0 ? "red" : "green")">
                         @stock.ChangePercent.ToString("F2")%
@@ -205,6 +209,16 @@ else
         }
 
         stocks = query?.ToList();
+    }
+
+    private string GetMarketPrefix(string code)
+    {
+        if (string.IsNullOrEmpty(code)) return "";
+        // 简单逻辑：6开头为上海(sh)，0或3开头为深圳(sz)，8或4开头为北京(bj)
+        if (code.StartsWith("6")) return "sh" + code;
+        if (code.StartsWith("0") || code.StartsWith("3")) return "sz" + code;
+        if (code.StartsWith("8") || code.StartsWith("4")) return "bj" + code;
+        return code;
     }
 
     private string GetSortIcon(string column)
