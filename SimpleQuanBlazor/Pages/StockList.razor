@@ -27,6 +27,8 @@ else
                 <th style="cursor:pointer" @onclick="@((e) => ToggleSort("ChangePercent", e.ShiftKey))">涨跌幅(%) @GetSortIcon("ChangePercent")</th>
                 <th style="cursor:pointer" @onclick="@((e) => ToggleSort("Turnover", e.ShiftKey))">成交额 (亿) @GetSortIcon("Turnover")</th>
                 <th style="cursor:pointer" @onclick="@((e) => ToggleSort("NetInflow", e.ShiftKey))">主力净流入 (亿) @GetSortIcon("NetInflow")</th>
+                <th style="cursor:pointer" @onclick="@((e) => ToggleSort("TotalMarketCap", e.ShiftKey))">总市值 (亿) @GetSortIcon("TotalMarketCap")</th>
+                <th style="cursor:pointer" @onclick="@((e) => ToggleSort("FloatMarketCap", e.ShiftKey))">流通市值 (亿) @GetSortIcon("FloatMarketCap")</th>
             </tr>
         </thead>
         <tbody>
@@ -43,6 +45,8 @@ else
                     <td style="color: @(stock.NetInflow >= 0 ? "red" : "green")">
                         @((stock.NetInflow / 100000000).ToString("F2"))
                     </td>
+                    <td>@((stock.TotalMarketCap / 100000000).ToString("F2"))</td>
+                    <td>@((stock.FloatMarketCap / 100000000).ToString("F2"))</td>
                 </tr>
             }
         </tbody>
@@ -79,21 +83,21 @@ else
 
         if (!multiSort)
         {
-            // 单列排序逻辑：如果是当前列则切换方向，否则替换为新列
-            bool nextAsc = (existing != null) ? !existing.IsAscending : true;
+            // 单列排序：重置并应用新排序列
+            bool nextAsc = (existing != null && sortCriteria.Count == 1) ? !existing.IsAscending : false; 
             sortCriteria.Clear();
             sortCriteria.Add(new SortCriterion { Column = column, IsAscending = nextAsc });
         }
         else
         {
-            // 多列聚合排序逻辑 (按住 Shift 或类似操作触发)
+            // 多列叠加：保留之前的顺序，将新列按点击顺序追加到末尾（或切换已有列方向）
             if (existing != null)
             {
                 existing.IsAscending = !existing.IsAscending;
             }
             else
             {
-                sortCriteria.Add(new SortCriterion { Column = column, IsAscending = true });
+                sortCriteria.Add(new SortCriterion { Column = column, IsAscending = false });
             }
         }
         ApplySorting();
@@ -116,6 +120,8 @@ else
                 "ChangePercent" => s => s.ChangePercent,
                 "Turnover" => s => s.Turnover,
                 "NetInflow" => s => s.NetInflow,
+                "TotalMarketCap" => s => s.TotalMarketCap,
+                "FloatMarketCap" => s => s.FloatMarketCap,
                 _ => s => s.Turnover
             };
 

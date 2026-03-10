@@ -9,5 +9,7 @@ namespace SimpleQuanBlazor.Data
         public double Turnover { get; set; } // 成交额
         public double Volume { get; set; }   // 成交量
         public double NetInflow { get; set; } // 今日主力净流入
+        public double TotalMarketCap { get; set; } // 总市值
+        public double FloatMarketCap { get; set; } // 流通市值
     }
 }
