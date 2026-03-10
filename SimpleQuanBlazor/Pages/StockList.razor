@@ -21,12 +21,12 @@ else
     <table class="table">
         <thead>
             <tr>
-                <th style="cursor:pointer" @onclick="@(() => SortBy("Code"))">代码 @GetSortIcon("Code")</th>
-                <th style="cursor:pointer" @onclick="@(() => SortBy("Name"))">名称 @GetSortIcon("Name")</th>
-                <th style="cursor:pointer" @onclick="@(() => SortBy("Price"))">最新价 @GetSortIcon("Price")</th>
-                <th style="cursor:pointer" @onclick="@(() => SortBy("ChangePercent"))">涨跌幅(%) @GetSortIcon("ChangePercent")</th>
-                <th style="cursor:pointer" @onclick="@(() => SortBy("Turnover"))">成交额 (亿) @GetSortIcon("Turnover")</th>
-                <th style="cursor:pointer" @onclick="@(() => SortBy("NetInflow"))">主力净流入 (亿) @GetSortIcon("NetInflow")</th>
+                <th style="cursor:pointer" @onclick="@((e) => ToggleSort("Code", e.ShiftKey))">代码 @GetSortIcon("Code")</th>
+                <th style="cursor:pointer" @onclick="@((e) => ToggleSort("Name", e.ShiftKey))">名称 @GetSortIcon("Name")</th>
+                <th style="cursor:pointer" @onclick="@((e) => ToggleSort("Price", e.ShiftKey))">最新价 @GetSortIcon("Price")</th>
+                <th style="cursor:pointer" @onclick="@((e) => ToggleSort("ChangePercent", e.ShiftKey))">涨跌幅(%) @GetSortIcon("ChangePercent")</th>
+                <th style="cursor:pointer" @onclick="@((e) => ToggleSort("Turnover", e.ShiftKey))">成交额 (亿) @GetSortIcon("Turnover")</th>
+                <th style="cursor:pointer" @onclick="@((e) => ToggleSort("NetInflow", e.ShiftKey))">主力净流入 (亿) @GetSortIcon("NetInflow")</th>
             </tr>
         </thead>
         <tbody>
@@ -51,9 +51,14 @@ else
 
 @code {
     private List<StockInfo>? stocks;
-    private string currentSortColumn = "Turnover";
-    private bool isAscending = false;
+    private List<SortCriterion> sortCriteria = new() { new SortCriterion { Column = "Turnover", IsAscending = false } };
     private bool loading = false;
+
+    private class SortCriterion
+    {
+        public string Column { get; set; } = "";
+        public bool IsAscending { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -64,54 +69,75 @@ else
     {
         loading = true;
         stocks = await StockService.GetTop100ByTurnoverAsync();
-        SortStocks();
+        ApplySorting();
         loading = false;
     }
 
-    private void SortBy(string column)
+    private void ToggleSort(string column, bool multiSort)
     {
-        if (currentSortColumn == column)
+        var existing = sortCriteria.FirstOrDefault(x => x.Column == column);
+
+        if (!multiSort)
         {
-            isAscending = !isAscending;
+            // 单列排序逻辑：如果是当前列则切换方向，否则替换为新列
+            bool nextAsc = (existing != null) ? !existing.IsAscending : true;
+            sortCriteria.Clear();
+            sortCriteria.Add(new SortCriterion { Column = column, IsAscending = nextAsc });
         }
         else
         {
-            currentSortColumn = column;
-            isAscending = true;
+            // 多列聚合排序逻辑 (按住 Shift 或类似操作触发)
+            if (existing != null)
+            {
+                existing.IsAscending = !existing.IsAscending;
+            }
+            else
+            {
+                sortCriteria.Add(new SortCriterion { Column = column, IsAscending = true });
+            }
         }
-        SortStocks();
+        ApplySorting();
     }
 
-    private void SortStocks()
+    private void ApplySorting()
     {
-        if (stocks == null) return;
+        if (stocks == null || !sortCriteria.Any()) return;
 
-        switch (currentSortColumn)
+        IOrderedEnumerable<StockInfo>? query = null;
+
+        for (int i = 0; i < sortCriteria.Count; i++)
         {
-            case "Code":
-                stocks = isAscending ? stocks.OrderBy(s => s.Code).ToList() : stocks.OrderByDescending(s => s.Code).ToList();
-                break;
-            case "Name":
-                stocks = isAscending ? stocks.OrderBy(s => s.Name).ToList() : stocks.OrderByDescending(s => s.Name).ToList();
-                break;
-            case "Price":
-                stocks = isAscending ? stocks.OrderBy(s => s.Price).ToList() : stocks.OrderByDescending(s => s.Price).ToList();
-                break;
-            case "ChangePercent":
-                stocks = isAscending ? stocks.OrderBy(s => s.ChangePercent).ToList() : stocks.OrderByDescending(s => s.ChangePercent).ToList();
-                break;
-            case "Turnover":
-                stocks = isAscending ? stocks.OrderBy(s => s.Turnover).ToList() : stocks.OrderByDescending(s => s.Turnover).ToList();
-                break;
-            case "NetInflow":
-                stocks = isAscending ? stocks.OrderBy(s => s.NetInflow).ToList() : stocks.OrderByDescending(s => s.NetInflow).ToList();
-                break;
+            var crit = sortCriteria[i];
+            Func<StockInfo, object> selector = crit.Column switch
+            {
+                "Code" => s => s.Code,
+                "Name" => s => s.Name,
+                "Price" => s => s.Price,
+                "ChangePercent" => s => s.ChangePercent,
+                "Turnover" => s => s.Turnover,
+                "NetInflow" => s => s.NetInflow,
+                _ => s => s.Turnover
+            };
+
+            if (i == 0)
+            {
+                query = crit.IsAscending ? stocks.OrderBy(selector) : stocks.OrderByDescending(selector);
+            }
+            else
+            {
+                query = crit.IsAscending ? query!.ThenBy(selector) : query!.ThenByDescending(selector);
+            }
         }
+
+        stocks = query?.ToList();
     }
 
     private string GetSortIcon(string column)
     {
-        if (currentSortColumn != column) return "↕";
-        return isAscending ? "↑" : "↓";
+        var crit = sortCriteria.FirstOrDefault(x => x.Column == column);
+        if (crit == null) return "↕";
+        
+        string indexStr = sortCriteria.Count > 1 ? (sortCriteria.IndexOf(crit) + 1).ToString() : "";
+        return (crit.IsAscending ? "↑" : "↓") + indexStr;
     }
 }

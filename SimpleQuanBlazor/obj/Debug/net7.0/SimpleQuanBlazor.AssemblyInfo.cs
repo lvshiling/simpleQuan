@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SimpleQuanBlazor")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+124daef0a09a9328b0929f2363d6cdac8eae4951")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e990427e4eda38ad9c6725a8462ac4e116a0d805")]
 [assembly: System.Reflection.AssemblyProductAttribute("SimpleQuanBlazor")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SimpleQuanBlazor")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
