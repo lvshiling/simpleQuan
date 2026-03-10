@@ -8,7 +8,23 @@
 
 <p>实时统计当前成交额前100的个股 (单位：亿元)。接口仅支持实时数据及最近一交易日统计。点击列名可进行排序。</p>
 
-@if (loading)
+<div class="mb-3 d-flex align-items-center">
+    <label for="refreshInterval" class="me-2">刷新频率:</label>
+    <select id="refreshInterval" class="form-select w-auto" @onchange="OnIntervalChange">
+        <option value="1000">1秒</option>
+        <option value="2000">2秒</option>
+        <option value="3000">3秒</option>
+        <option value="5000">5秒</option>
+        <option value="10000">10秒</option>
+        <option value="0">停止刷新</option>
+    </select>
+    @if (refreshInterval > 0)
+    {
+        <span class="ms-3 text-muted">下次刷新预计在: @nextRefreshCounter 秒后</span>
+    }
+</div>
+
+@if (loading && stocks == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -53,10 +69,21 @@ else
     </table>
 }
 
+@implements IDisposable
+
 @code {
     private List<StockInfo>? stocks;
     private List<SortCriterion> sortCriteria = new() { new SortCriterion { Column = "Turnover", IsAscending = false } };
     private bool loading = false;
+    private System.Timers.Timer? refreshTimer;
+    private int refreshInterval = 1000; // 1秒
+    private int nextRefreshCounter = 1;
+
+    public void Dispose()
+    {
+        refreshTimer?.Stop();
+        refreshTimer?.Dispose();
+    }
 
     private class SortCriterion
     {
@@ -67,6 +94,46 @@ else
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
+        SetupTimer();
+    }
+
+    private void SetupTimer()
+    {
+        refreshTimer?.Stop();
+        refreshTimer?.Dispose();
+
+        if (refreshInterval > 0)
+        {
+            nextRefreshCounter = refreshInterval / 1000;
+            refreshTimer = new System.Timers.Timer(1000);
+            refreshTimer.Elapsed += async (sender, e) =>
+            {
+                nextRefreshCounter--;
+                if (nextRefreshCounter <= 0)
+                {
+                    await InvokeAsync(LoadData);
+                }
+                else
+                {
+                    await InvokeAsync(StateHasChanged);
+                }
+            };
+            refreshTimer.AutoReset = true;
+            refreshTimer.Enabled = true;
+        }
+    }
+
+    private async Task OnIntervalChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int newInterval))
+        {
+            refreshInterval = newInterval;
+            SetupTimer();
+            if (refreshInterval > 0)
+            {
+                await LoadData();
+            }
+        }
     }
 
     private async Task LoadData()
@@ -75,6 +142,8 @@ else
         stocks = await StockService.GetTop100ByTurnoverAsync();
         ApplySorting();
         loading = false;
+        nextRefreshCounter = refreshInterval / 1000;
+        await InvokeAsync(StateHasChanged);
     }
 
     private void ToggleSort(string column, bool multiSort)
